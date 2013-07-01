@@ -12,6 +12,7 @@ module Wunderground
   end
   module Api
   BASE_URL = 'http://api.wunderground.com/api'
+  AUTOC_URL = 'http://autocomplete.wunderground.com/aq?'
   DEFAULT_FORMAT = 'json'
     def self.included(base)
        base.extend MethodModule
@@ -66,17 +67,33 @@ module Wunderground
       #q_type = t
       location = options.delete(:location) || options.delete(:l)
       unless location.nil?
-        if String === location
-          t = t + '/' + location
-        elsif Array === location
-          t = t + '/' + location.join('/')
-        end
+        # if location =~ /^[a-bA-Z\/\_]+$/
+          if String === location 
+            if  location =~ /\//  || location =~ /\:/
+              t = t + '/' + location
+            else
+              #p JSON.parse(open(URI::escape(AUTOC_URL+"query=#{location}")).read)
+              #p open(URI::escape(AUTOC_URL+"query=#{location}")).read
+              json =  JSON.parse(open(URI::escape(AUTOC_URL+"query=#{location}")).read)
+
+              t = t + '/zmw:' + json["RESULTS"][0]["zmw"]
+            end
+          elsif Hash === location
+            params = []
+            location.each do |key,value|
+              params << "#{key}=#{value}"
+            end
+            t = t + '/zmw:' + JSON.parse(open(URI::escape(AUTOC_URL+"#{params.join("&")}")).read)
+          elsif Array === location
+            t = t + '/' + location.join('/')
+          end
       end
     end
-    #  "#{t}."
-    #else
+
       "#{t}.#{options[:format] || @format}"
-    #end
+  rescue => e
+    raise APIError ,"location error  #{e}"
+
   end
 
   protected
