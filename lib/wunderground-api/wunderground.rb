@@ -12,6 +12,7 @@ module Wunderground
   end
   module Api
   BASE_URL = 'http://api.wunderground.com/api'
+  AUTOC_URL = 'http://autocomplete.wunderground.com/aq?'
   DEFAULT_FORMAT = 'json'
     def self.included(base)
        base.extend MethodModule
@@ -25,12 +26,8 @@ module Wunderground
       params << "#{k}=#{value}"
     end
     set_lang = @lang ? "/lang:#{@lang}" : ""
-    if @lang
-      URI::escape("#{BASE_URL}/#{@api_key}/#{feature}#{set_lang}/#{query_type}#{params.length > 0 ? '?'+ params.join("&"):''}")
-    else
-      URI::escape("#{BASE_URL}/#{@api_key}/#{feature}/#{query_type}#{params.length > 0 ? '?'+ params.join("&"):''}")
-    end
-
+ 
+    URI::escape("#{BASE_URL}/#{@api_key}/#{feature}#{set_lang}/#{query_type}#{params.length > 0 ? '?'+ params.join("&"):''}")
   end
 
   def get_data(url)
@@ -82,15 +79,28 @@ module Wunderground
       #q_type = t
       location = options.delete(:location) || options.delete(:l)
       unless location.nil?
-        if String === location
-          t = t + '/' + location
-        elsif Array === location
-          t = t + '/' + location.join('/')
-        end
+        # if location =~ /^[a-bA-Z\/\_]+$/
+          if String === location 
+            if  location =~ /\//  || location =~ /\:/
+              t = t + '/' + location
+            else
+              json =  JSON.parse(open(URI::escape(AUTOC_URL+"query=#{location}")).read)
+              t = t + '/zmw:' + json["RESULTS"].last["zmw"]
+            end
+          elsif Hash === location
+            params = []
+            location.each do |key,value|
+              params << "#{key}=#{value}"
+            end
+            t = t + '/zmw:' + JSON.parse(open(URI::escape(AUTOC_URL+"#{params.join("&")}")).read)
+          elsif Array === location
+            t = t + '/' + location.join('/')
+          end
       end
     end
-    t =~ /\.\w/  ?  t : "#{t}.#{options[:format] || @format}"
-
+  t.split('/')[0] =~ /\.\w/  ?  t : "#{t}.#{options[:format] || @format}"
+  rescue => e
+    raise APIError ,"location error  #{e}"
   end
 
   protected

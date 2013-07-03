@@ -23,4 +23,7 @@ myapi =  Wunderground::Base.new(lang: "CN",format:"json",api_key:api_key)
 p myapi.alerts_for(:location=>["IA","Des_Moines"],:result_format=>:url)
 p myapi.alerts_for(:location=>["IA","Des_Moines"])
 p myapi.planner_for("07010731",:location=>["IA","Des_Moines"],:result_format=>:url)
-p myapi.planner_for("07010731",:location=>"Nanjing",:result_format=>:Hash)
+p myapi.planner_for("07010731",:location=>"Nanjing",:result_format=>:url)
+
+p wapi.history_for("20130202",:location=>'Nanjing',:result_format=>:json)
+p wapi.hourly_for(:location=>"Beijing",:result_format=>'Hash')
