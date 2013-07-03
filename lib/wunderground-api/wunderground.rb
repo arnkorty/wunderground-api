@@ -24,20 +24,36 @@ module Wunderground
     options.each do |k,value|
       params << "#{k}=#{value}"
     end
-    URI::escape("#{BASE_URL}/#{@api_key}/#{feature}/#{query_type}#{params.length > 0 ? '?'+ params.join("&"):''}")
+    set_lang = @lang ? "/lang:#{@lang}" : ""
+    if @lang
+      URI::escape("#{BASE_URL}/#{@api_key}/#{feature}#{set_lang}/#{query_type}#{params.length > 0 ? '?'+ params.join("&"):''}")
+    else
+      URI::escape("#{BASE_URL}/#{@api_key}/#{feature}/#{query_type}#{params.length > 0 ? '?'+ params.join("&"):''}")
+    end
+
   end
 
   def get_data(url)
-    case (@result_format || 'url').to_s
+    case (@result_format || DEFAULT_FORMAT).downcase.to_s
       when 'url'
         url
-      when 'json','String'
-        open(url).read
-      when 'Hash'
-        JSON.parse(open(url).read)
-      when 'gif'
+      when 'json','string',"hash"
+        json = open(url).read
+        h = JSON.parse(json)
+        if h["response"]["error"]
+          case  h["response"]["error"]["type"]
+            when "keynotfound"
+              raise  MissingAPIKey, "#{ h["response"]["error"]["type"]} =>#{ h["response"]["error"]["description"]}"
+            else
+              raise  APIError, "#{ h["response"]["error"]["type"]} =>#{ h["response"]["error"]["description"]}"
+          end
+        end
+        (@result_format || DEFAULT_FORMAT).downcase.to_s == "hash" ? h : json
+      when 'gif',"jpg","png","jpeg"
         url
     end
+  rescue => e
+    raise e.class,e.to_s
   end
 
   def lang
@@ -73,10 +89,8 @@ module Wunderground
         end
       end
     end
-    #  "#{t}."
-    #else
-      "#{t}.#{options[:format] || @format}"
-    #end
+    t =~ /\.\w/  ?  t : "#{t}.#{options[:format] || @format}"
+
   end
 
   protected
