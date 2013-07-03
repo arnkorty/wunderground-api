@@ -26,8 +26,8 @@ end
 myapi = Wunderground::Base.new
 #or
 myapi = Wunderground::Base.new(lang:your_language,format:format,api_key:your_api_key)
-```
- myapi.history_for("20130202",:location=>'JS/Nanjing',:result_format=>:Hash)
+
+myapi.history_for("20130202",:location=>'JS/Nanjing',:result_format=>:Hash)
  #as a Hash {"response"=>{"version"=>"0.1", "termsofService"=>"http://www.wunderground.com/weather/api/d/terms.html", ...
 myapi.history_for("20130202",:location=>'JS/Nanjing')
  #default as json  "\n{\n\t\"response\": {\n\t\t\"version\": \"0.1\"\n\t\t,\"termsofS ...
